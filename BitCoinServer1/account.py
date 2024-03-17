@@ -31,19 +31,6 @@ def generatePublicKeyAddress(public_key_hex):
 
     return public_key_address
 
-# 示例用法
-# private_key, public_key = generateKeyPair()
-# from_address = generatePublicKeyAddress(public_key)
-# to_address = "04e940bb0a2d062800f4bc1ef4b53c4a7cccbac6fc1a038541bb23"
-# value = 10
-# transaction = CryptoTransaction(public_key,from_address, to_address, value, private_key)
-# transaction.generate_signature()
-
-# if transaction.verify_signature():
-#     print("Transaction is valid.")
-# else:
-#     print("Transaction is not valid.")
-
 
 class Account:
     def __init__(self,id,balance,public_key,private_key,public_address):
@@ -96,9 +83,12 @@ def check_action(accounts,id,amount):
         return False
 
 #修改账户信息，但只在字典accounts中修改
-def modify_accounts(accounts,id_out,id_in,amount):
-    accounts[id_in].deposit(amount)
-    accounts[id_out].withdraw(amount)
+def modify_accounts(accounts,id,amount,action):
+    if action == 'deposit':
+        accounts[id].deposit(amount)
+    elif action == 'withdraw':
+        accounts[id].withdraw(amount)
+    return accounts
 
 #保存账户信息到csv
 def save_accounts(accounts):

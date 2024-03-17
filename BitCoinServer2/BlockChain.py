@@ -42,12 +42,12 @@ def generate_genesis_block():
 def verify_new_block(blockchain,new_block):
     #验证previous_hash
     if blockchain.blocks[-1].hash != new_block.prev_hash:
-        print("(Server1) Previous hash not valid")
+        print("(Server2) Previous hash not valid")
         return False
     #验证nonce
     pow = ProofOfWork(new_block)
     if pow.validate == False:
-        print("(Server1) Nonce not valid")
+        print("(Server2) Nonce not valid")
         return False
     #验证transactions
     pass
@@ -58,9 +58,9 @@ def generate_block(transactions, blockchain):
     new_block = Block(transactions=transactions,
                       prev_hash=blockchain.blocks[len(blockchain.blocks) - 1].hash,
                       height=blockchain.height + 1)
-    print("(Server1)生成新的区块...")
+    print("(Server2)生成新的区块...")
     # 挖矿
     w = ProofOfWork(new_block)
     block = w.mine()
-    print('(Server1)新区块生成成功')
+    print('(Server2)新区块生成成功')
     return block

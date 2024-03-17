@@ -6,13 +6,15 @@ import time
 
 def send_message(ip, port, message):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((ip, port))
-        s.sendall(message.encode('gbk'))
-
-# def send_message_every_second(ip, port, message):
-#     while True:
-#         send_message(ip, port, message)
-#         time.sleep(2)
+        i = 0
+        try:
+            s.connect((ip, port))
+            s.sendall(message.encode('gbk'))
+            i += 1
+        except:
+            if i >= 3:
+                print(f"Can't connect to {ip}")
+        s.close()
 
 
 if __name__ == '__main__':
@@ -37,8 +39,8 @@ if __name__ == '__main__':
         field_value = value_out
         field_sig = accounts[id_out].generate_signature(field_to,field_value)
         transaction = f"{field_timestamp},{field_from},{field_to},{field_value},{field_sig}"
-        #transaction = f'{id_out},{id_in},{value_out}'
         #广播交易信息到server1和server2节点
+        print(f'{id_out} send {value_out} to {id_in}')
         thread1 = threading.Thread(target=send_message, args=(ip1, port, transaction))
         thread2 = threading.Thread(target=send_message, args=(ip2, port, transaction))
         try_num1 = 0
