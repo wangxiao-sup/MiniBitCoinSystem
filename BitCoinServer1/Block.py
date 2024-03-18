@@ -24,6 +24,7 @@ class Block:
         # 设置Nonce和哈希的初始值为None
         self.nonce = None
         self.hash = None
+        self.owner = None
  
     # 类的 __repr__() 方法定义了实例化对象的输出信息
     def __repr__(self):

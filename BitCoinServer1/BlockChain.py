@@ -53,14 +53,3 @@ def verify_new_block(blockchain,new_block):
     pass
     return True
  
-# 矿工将验证成功的交易列表打包出块
-def generate_block(transactions, blockchain):
-    new_block = Block(transactions=transactions,
-                      prev_hash=blockchain.blocks[len(blockchain.blocks) - 1].hash,
-                      height=blockchain.height + 1)
-    print("(Server1)生成新的区块...")
-    # 挖矿
-    w = ProofOfWork(new_block)
-    block = w.mine()
-    print('(Server1)新区块生成成功')
-    return block

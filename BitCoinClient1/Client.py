@@ -23,7 +23,7 @@ if __name__ == '__main__':
     port = 8000
 
     while(1):
-        time.sleep(3)
+        time.sleep(5)
         #从csv加载账户信息
         accounts = load_account()
         id_list = list(accounts.keys())

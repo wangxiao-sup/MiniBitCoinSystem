@@ -23,7 +23,7 @@ class listenThread(Thread):
             #若消息来自server
             if Addr[0] == '172.17.0.2': 
                 print(f"(Server2) Block Infromation")
-                add_block_thread = addNewBlock(msg)
+                add_block_thread = addNewBlock(msg,'Server1')
                 add_block_thread.start()
                 socket.close()
             #若消息来自client
@@ -48,23 +48,28 @@ class addNewTransacation(Thread):
         field_time,field_from,field_to,field_value,field_sig = self.transcation.split(',')
         id_out,id_in = pub_addr_dict[field_from],pub_addr_dict[field_to]
         if accounts[id_out].verify_signature(field_to,field_value,field_sig) == True:
-            global_transcations.append((field_time,field_from,field_to,field_value,field_sig))
+            global_transcations.append([field_time,field_from,field_to,field_value,field_sig,False])
             print(f'Transcation info:{id_out} send {field_value} to {id_in}')
             print('Print Transacations:')
             printTransacations(global_transcations)
-        if len(global_transcations) >= 2:
+        #if len(global_transcations) >= 2:
+        if len(global_transcations) >= 2 and global_transcations[0][5] == global_transcations[1][5] == False:
             #生成新的区块
+            global_transcations[0][5] = global_transcations[1][5] = True
             new_block = generate_block(list((global_transcations[0],global_transcations[1])),global_blockchain)
+            if new_block == None:
+                #global_transcations[0][5] = global_transcations[1][5] = False
+                return
             #广播新区块
             sendBlock(new_block)
             #加入自身的blockchain
             new_block_json = new_block.toJson()
-            add_block_thread = addNewBlock(json.dumps(new_block_json).encode('utf-8'))
+            add_block_thread = addNewBlock(json.dumps(new_block_json).encode('utf-8'),'Server2')
             add_block_thread.start() 
 
 #加入新block线程
 class addNewBlock(Thread):
-    def __init__(self,msg):
+    def __init__(self,msg,owner):
         Thread.__init__(self)
         self.new_block_json = json.loads(msg.decode('utf-8'))
         self.new_block = Block(transactions=self.new_block_json['transactions'],
@@ -72,7 +77,8 @@ class addNewBlock(Thread):
                                height=self.new_block_json['height'],)
         self.new_block.hash = self.new_block_json['hash']
         self.new_block.nonce = self.new_block_json['nonce']
-        
+        self.new_block.owner = owner
+
     def run(self):
         global pub_addr_dict
         global global_blockchain
@@ -85,6 +91,42 @@ class addNewBlock(Thread):
             print("Block is not valid")
         printBlockChain(global_blockchain)
         
+# 矿工将验证成功的交易列表打包出块
+def generate_block(transactions, blockchain):
+    new_block = Block(transactions=transactions,
+                      prev_hash=blockchain.blocks[len(blockchain.blocks) - 1].hash,
+                      height=blockchain.height + 1)
+    print("(Server2)生成新的区块...")
+    print('(Server2)正在生成交易信息为')
+    printTransacations(transactions)
+    # 挖矿
+    # w = ProofOfWork(new_block)
+    # block = w.mine()
+    difficulty = 5
+    i = 0
+    prefix = '0' * difficulty
+    height_raw = len(blockchain.blocks)
+    while True:
+        if len(blockchain.blocks) != height_raw:
+            break
+        block_info = hashlib.sha256()
+        block_info.update(str(new_block.prev_hash).encode('utf-8'))
+        # 更新区块中的交易数据
+        block_info.update(str(new_block.transactions).encode('utf-8'))
+        block_info.update(str(new_block.timestamp).encode('utf-8'))
+        block_info.update(str(i).encode("utf-8"))
+        digest = block_info.hexdigest()
+        if digest.startswith(prefix):
+            new_block.nonce = i
+            new_block.hash = digest
+            break
+        i += 1
+    if new_block.hash == None:
+        print('(Server2)挖矿速度过慢，新区块生成失败')
+        return None
+    else:
+        print('(Server2)新区块生成成功')
+        return new_block
 
 #广播block
 def sendBlock(block):
@@ -96,7 +138,6 @@ def sendBlock(block):
     block_json = block.toJson()
     socket_.send(json.dumps(block_json).encode('utf-8'))
     socket_.close()
-
 
 #清除交易队列中已经打包的交易
 def clearTransacations(transactions):
@@ -128,7 +169,7 @@ def printTransacations(transactions):
 #打印区块链
 def printBlockChain(blockchain):
     for block in blockchain.blocks:
-        print(f"{block.hash[5:8]} ->",end = ' ')
+        print(f"{block.hash[5:8]}({block.owner}) ->",end = ' ')
     print('')
 
 if __name__ == '__main__':
