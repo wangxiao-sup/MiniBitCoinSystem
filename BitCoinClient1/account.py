@@ -97,6 +97,14 @@ def save_accounts(accounts):
         writer.writerow(['id','balance'])
         for id, account in accounts.items():
             writer.writerow([account.id, account.balance])
+#将字典写入csv文件
+def write_to_csv(accounts):
+    with open('./accounts.csv', 'w') as file:
+        writer = csv.writer(file)
+        writer.writerow(['id','balance','public_key','private_key','public_address'])
+        for id, account in accounts.items():
+            writer.writerow([account.id, account.balance, account.public_key, account.private_key, account.public_address])
+        
 
 
 

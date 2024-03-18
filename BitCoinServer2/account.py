@@ -94,9 +94,10 @@ def modify_accounts(accounts,id,amount,action):
 def save_accounts(accounts):
     with open('./accounts.csv', 'w') as file:
         writer = csv.writer(file)
-        writer.writerow(['id','balance'])
+        writer.writerow(['id','balance','public_key','private_key','public_address'])
         for id, account in accounts.items():
-            writer.writerow([account.id, account.balance])
+            writer.writerow([account.id, account.balance, account.public_key, account.private_key, account.public_address])
+
 
 
 

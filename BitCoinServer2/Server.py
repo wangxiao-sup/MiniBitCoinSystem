@@ -47,9 +47,15 @@ class addNewTransacation(Thread):
         global accounts
         field_time,field_from,field_to,field_value,field_sig = self.transcation.split(',')
         id_out,id_in = pub_addr_dict[field_from],pub_addr_dict[field_to]
-        if accounts[id_out].verify_signature(field_to,field_value,field_sig) == True:
-            global_transcations.append([field_time,field_from,field_to,field_value,field_sig,False])
+        if accounts[id_out].verify_signature(field_to,field_value,field_sig) == True: 
             print(f'Transcation info:{id_out} send {field_value} to {id_in}')
+            if checkBalance([field_time,field_from,field_to,field_value,field_sig]) == False:
+                print('Balance not enough !')
+            else:
+                accounts[id_out].withdraw(float(field_value))
+                accounts[id_in].deposit(float(field_value))
+                global_transcations.append([field_time,field_from,field_to,field_value,field_sig,False])
+                #print(f'Transcation info:{id_out} send {field_value} to {id_in}')
             print('Print Transacations:')
             printTransacations(global_transcations)
         #if len(global_transcations) >= 2:
@@ -67,7 +73,7 @@ class addNewTransacation(Thread):
             add_block_thread = addNewBlock(json.dumps(new_block_json).encode('utf-8'),'Server2')
             add_block_thread.start() 
 
-#加入新block线程
+#处理新收到block线程
 class addNewBlock(Thread):
     def __init__(self,msg,owner):
         Thread.__init__(self)
@@ -90,7 +96,9 @@ class addNewBlock(Thread):
         else:
             print("Block is not valid")
         printBlockChain(global_blockchain)
-        
+
+
+
 # 矿工将验证成功的交易列表打包出块
 def generate_block(transactions, blockchain):
     new_block = Block(transactions=transactions,
@@ -138,6 +146,17 @@ def sendBlock(block):
     block_json = block.toJson()
     socket_.send(json.dumps(block_json).encode('utf-8'))
     socket_.close()
+
+#检验某条交易是否合法
+def checkBalance(transaction):
+    global accounts
+    global pub_addr_dict
+    field_time,field_from,field_to,field_value,field_sig = transaction
+    id_out,id_in = pub_addr_dict[field_from],pub_addr_dict[field_to]
+    if check_action(accounts,id_out,float(field_value)) == True:
+        return True
+    else:
+        return False
 
 #清除交易队列中已经打包的交易
 def clearTransacations(transactions):

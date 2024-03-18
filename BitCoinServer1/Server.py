@@ -47,9 +47,15 @@ class addNewTransacation(Thread):
         global accounts
         field_time,field_from,field_to,field_value,field_sig = self.transcation.split(',')
         id_out,id_in = pub_addr_dict[field_from],pub_addr_dict[field_to]
-        if accounts[id_out].verify_signature(field_to,field_value,field_sig) == True:
-            global_transcations.append([field_time,field_from,field_to,field_value,field_sig,False])
+        if accounts[id_out].verify_signature(field_to,field_value,field_sig) == True: 
             print(f'Transcation info:{id_out} send {field_value} to {id_in}')
+            if checkBalance([field_time,field_from,field_to,field_value,field_sig]) == False:
+                print('Balance not enough !')
+            else:
+                accounts[id_out].withdraw(float(field_value))
+                accounts[id_in].deposit(float(field_value))
+                global_transcations.append([field_time,field_from,field_to,field_value,field_sig,False])
+                #print(f'Transcation info:{id_out} send {field_value} to {id_in}')
             print('Print Transacations:')
             printTransacations(global_transcations)
         #if len(global_transcations) >= 2:
@@ -92,6 +98,8 @@ class addNewBlock(Thread):
             print("Block is not valid")
         printBlockChain(global_blockchain)
 
+
+
 # 矿工将验证成功的交易列表打包出块
 def generate_block(transactions, blockchain):
     new_block = Block(transactions=transactions,
@@ -101,8 +109,6 @@ def generate_block(transactions, blockchain):
     print('(Server1)正在生成交易信息为')
     printTransacations(transactions)
     # 挖矿
-    # w = ProofOfWork(new_block)
-    # block = w.mine()
     difficulty = 5
     i = 0
     prefix = '0' * difficulty
@@ -129,7 +135,6 @@ def generate_block(transactions, blockchain):
         print('(Server1)新区块生成成功')
         return new_block
 
-
 #广播block
 def sendBlock(block):
     ip = '172.17.0.3'
@@ -140,6 +145,17 @@ def sendBlock(block):
     block_json = block.toJson()
     socket_.send(json.dumps(block_json).encode('utf-8'))
     socket_.close()
+
+#检验某条交易是否合法
+def checkBalance(transaction):
+    global accounts
+    global pub_addr_dict
+    field_time,field_from,field_to,field_value,field_sig = transaction
+    id_out,id_in = pub_addr_dict[field_from],pub_addr_dict[field_to]
+    if check_action(accounts,id_out,float(field_value)) == True:
+        return True
+    else:
+        return False
 
 #清除交易队列中已经打包的交易
 def clearTransacations(transactions):
@@ -176,6 +192,7 @@ def printBlockChain(blockchain):
 
 if __name__ == '__main__':
     accounts = load_account() #加载账户
+    accounts_time = 0 #表明此时accounts存储的是第几层block后的账户信息
     pub_addr_dict = accountToaddr(accounts) #将账户信息转化为地址字典
     global_blockchain = generate_genesis_block() #生成创世区块
     global_transcations = deque() #交易队列
